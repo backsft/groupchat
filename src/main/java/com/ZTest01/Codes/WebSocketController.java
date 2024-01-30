@@ -22,6 +22,7 @@ public class WebSocketController {
 		return message;
 	}
 
+	
 	@MessageMapping("/history")
 	public List<ChatMessage> getChatHistory() {
 	    // Retrieve chat history from MongoDB
