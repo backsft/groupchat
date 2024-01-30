@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatroom</title>
+    <style>
+        #chatContainer {
+            border: 1px solid #ccc;
+            padding: 10px;
+            max-height: 300px;
+            overflow-y: scroll;
+        }
+
+        #messageInput {
+            margin-top: 10px;
+        }
+    </style>
+
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.1.4/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+</head>
+<body>
+    <h2>Welcome to the Chatroom</h2>
+    <div id="welcomeMessage"></div>
+
+    <div id="chatContainer"></div>
+
+    <div id="messageInput">
+        <label for="message">Type your message:</label>
+        <input type="text" id="message" name="message" required>
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const username = urlParams.get('username');
+
+        // Establish WebSocket connection using Stomp.js and SockJS
+        const socket = new SockJS('/chat');
+        const stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, () => {
+            stompClient.subscribe('/topic/messages', (event) => {
+                const data = JSON.parse(event.body);
+                displayMessage(data.sender, data.message);
+            });
+        });
+
+        document.getElementById('welcomeMessage').innerText = `Welcome, ${username}!`;
+
+        function sendMessage() {
+            const messageInput = document.getElementById('message');
+            const message = messageInput.value;
+
+            if (message.trim() === '') {
+                alert('Please enter a message.');
+                return;
+            }
+
+            // Send the message to the server via WebSocket
+            stompClient.send("/app/chat/" + username, {}, JSON.stringify({ sender: username, message }));
+
+            // Display the sent message in the chat container
+     //       displayMessage(username, message);
+
+            // Clear the input field
+            messageInput.value = '';
+        }
+
+        function displayMessage(sender, message) {
+            const chatContainer = document.getElementById('chatContainer');
+
+            const isCurrentUser = sender === username;
+            const messageDiv = document.createElement('div');
+
+            if (isCurrentUser) {
+                messageDiv.innerHTML = `<span style="color: blue;">${sender}:</span> ${message}`;
+            } else {
+                messageDiv.innerHTML = `<strong>${sender}:</strong> ${message}`;
+            }
+            
+
+            chatContainer.appendChild(messageDiv);
+
+            // Scroll to the bottom to show the latest message
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        
+        
+    </script>
+</body>
+</html>

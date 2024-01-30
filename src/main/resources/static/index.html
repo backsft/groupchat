@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+</head>
+<body>
+    <h2>Enter Your Username</h2>
+    <form id="loginForm" onsubmit="checkUsername(event)">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+        <button type="submit">Login</button>
+    </form>
+
+    <script>
+        function checkUsername(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value;
+
+            fetch(`/users/get/${username}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('User not found');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // User found, redirect to chatroom
+                    window.location.href = `/chatroom.html?username=${username}`;
+                })
+                .catch(error => {
+                    alert('User not found. Please enter a valid username.');
+                });
+        }
+    </script>
+</body>
+</html>
