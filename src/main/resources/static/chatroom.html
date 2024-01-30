@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatroom</title>
+    <title>Dashboard</title>
     <style>
         #chatContainer {
             border: 1px solid #ccc;
@@ -15,15 +15,18 @@
         #messageInput {
             margin-top: 10px;
         }
+
+        #chatHistoryDisplay {
+            margin-top: 20px;
+        }
     </style>
 
- <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.1.4/sockjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.1.4/sockjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 
 </head>
 <body>
-    <h2>Welcome to the Chatroom</h2>
-    <div id="welcomeMessage"></div>
+    <h2>Welcome to the Dashboard</h2>
 
     <div id="chatContainer"></div>
 
@@ -33,11 +36,14 @@
         <button onclick="sendMessage()">Send</button>
     </div>
 
+    <div id="chatHistoryDisplay">
+        <h3>Chat History:</h3>
+    </div>
+
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const username = urlParams.get('username');
 
-        // Establish WebSocket connection using Stomp.js and SockJS
         const socket = new SockJS('/chat');
         const stompClient = Stomp.over(socket);
 
@@ -46,9 +52,27 @@
                 const data = JSON.parse(event.body);
                 displayMessage(data.sender, data.message);
             });
+
+            stompClient.subscribe('/topic/history', (event) => {
+                const history = JSON.parse(event.body);
+                displayChatHistory(history);
+            });
+
+            // Request chat history when connected
+            stompClient.send("/app/history", {}, JSON.stringify({}));
         });
 
-        document.getElementById('welcomeMessage').innerText = `Welcome, ${username}!`;
+        function displayChatHistory(history) {
+            const historyDisplayDiv = document.getElementById('chatHistoryDisplay');
+            historyDisplayDiv.innerHTML = '<h3>Chat History:</h3>';
+            
+            history.forEach((message) => {
+                const historyMessageDiv = document.createElement('div');
+                historyMessageDiv.innerHTML = `<strong>${message.sender}:</strong> ${message.message}`;
+                historyDisplayDiv.appendChild(historyMessageDiv);
+            });
+        }
+
 
         function sendMessage() {
             const messageInput = document.getElementById('message');
@@ -62,34 +86,34 @@
             // Send the message to the server via WebSocket
             stompClient.send("/app/chat/" + username, {}, JSON.stringify({ sender: username, message }));
 
-            // Display the sent message in the chat container
-     //       displayMessage(username, message);
-
             // Clear the input field
             messageInput.value = '';
         }
 
         function displayMessage(sender, message) {
             const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
 
             const isCurrentUser = sender === username;
-            const messageDiv = document.createElement('div');
 
             if (isCurrentUser) {
                 messageDiv.innerHTML = `<span style="color: blue;">${sender}:</span> ${message}`;
             } else {
                 messageDiv.innerHTML = `<strong>${sender}:</strong> ${message}`;
             }
-            
 
             chatContainer.appendChild(messageDiv);
 
             // Scroll to the bottom to show the latest message
             chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            // Display the chat history in a user-friendly format
+            const historyDisplayDiv = document.getElementById('chatHistoryDisplay');
+            const historyMessageDiv = document.createElement('div');
+            historyMessageDiv.innerHTML = `<strong>${sender}:</strong> ${message}`;
+            historyDisplayDiv.appendChild(historyMessageDiv);
         }
 
-        
-        
     </script>
 </body>
 </html>
